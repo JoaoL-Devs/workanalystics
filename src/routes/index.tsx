@@ -274,6 +274,86 @@ function Index() {
         </section>
 
         <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle>Dashboard de atividade</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tarefas concluídas nos últimos 14 dias
+              </p>
+            </div>
+            <div className="text-right text-sm">
+              <div className="text-muted-foreground">14 dias</div>
+              <div className="font-semibold">
+                {report.totalConcluidas} concluídas · {formatMinutes(report.totalMinutos)}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {report.totalConcluidas === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                Ainda não há tarefas concluídas para gerar o relatório.
+              </p>
+            ) : (
+              <div className="grid gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  <ChartContainer config={chartConfig} className="h-[260px] w-full">
+                    <BarChart data={report.series}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                      />
+                      <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
+                      <ChartTooltip
+                        cursor={false}
+                        content={
+                          <ChartTooltipContent
+                            labelFormatter={(_v, payload) =>
+                              (payload?.[0]?.payload as { full?: string })?.full ?? ""
+                            }
+                          />
+                        }
+                      />
+                      <Bar dataKey="concluidas" fill="var(--color-concluidas)" radius={4} />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+                <div>
+                  <div className="mb-2 text-sm font-medium">Dias com mais atividade</div>
+                  {report.top.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sem registros.</p>
+                  ) : (
+                    <ol className="space-y-2">
+                      {report.top.map((d, i) => (
+                        <li
+                          key={d.key}
+                          className="flex items-center justify-between rounded-md border p-2 text-sm"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                              {i + 1}
+                            </span>
+                            <span className="capitalize">{d.full}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold">{d.concluidas}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatMinutes(d.minutos)}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8">
           <CardHeader>
             <CardTitle>Nova tarefa</CardTitle>
           </CardHeader>
