@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Play, Square, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { Plus, Trash2, Play, Square, Calendar as CalendarIcon, Clock, FileText, Pencil, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
