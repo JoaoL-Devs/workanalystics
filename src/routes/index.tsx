@@ -21,6 +21,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -133,6 +140,59 @@ function Index() {
     };
   }, [tasks]);
 
+  const report = useMemo(() => {
+    const days = 14;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const buckets = new Map<string, { date: Date; concluidas: number; minutos: number }>();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      buckets.set(d.toISOString().slice(0, 10), { date: d, concluidas: 0, minutos: 0 });
+    }
+    for (const t of tasks) {
+      if (!t.closedAt) continue;
+      const key = new Date(t.closedAt).toISOString().slice(0, 10);
+      const bucket = buckets.get(key);
+      if (!bucket) continue;
+      bucket.concluidas += 1;
+      if (t.openedAt) {
+        const ms = new Date(t.closedAt).getTime() - new Date(t.openedAt).getTime();
+        if (ms > 0) bucket.minutos += Math.floor(ms / 60000);
+      }
+    }
+    const series = Array.from(buckets.values()).map((b) => ({
+      key: b.date.toISOString().slice(0, 10),
+      label: b.date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+      full: b.date.toLocaleDateString("pt-BR", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+      }),
+      concluidas: b.concluidas,
+      minutos: b.minutos,
+    }));
+    const top = [...series]
+      .filter((s) => s.concluidas > 0)
+      .sort((a, b) => b.concluidas - a.concluidas || b.minutos - a.minutos)
+      .slice(0, 5);
+    const totalConcluidas = series.reduce((a, s) => a + s.concluidas, 0);
+    const totalMinutos = series.reduce((a, s) => a + s.minutos, 0);
+    return { series, top, totalConcluidas, totalMinutos };
+  }, [tasks]);
+
+  function formatMinutes(min: number) {
+    if (!min) return "0min";
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    if (h === 0) return `${m}min`;
+    return `${h}h ${m}min`;
+  }
+
+  const chartConfig = {
+    concluidas: { label: "Concluídas", color: "hsl(var(--primary))" },
+  } satisfies ChartConfig;
+
   function addTask(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = title.trim();
@@ -212,6 +272,86 @@ function Index() {
             </Card>
           ))}
         </section>
+
+        <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle>Dashboard de atividade</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tarefas concluídas nos últimos 14 dias
+              </p>
+            </div>
+            <div className="text-right text-sm">
+              <div className="text-muted-foreground">14 dias</div>
+              <div className="font-semibold">
+                {report.totalConcluidas} concluídas · {formatMinutes(report.totalMinutos)}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {report.totalConcluidas === 0 ? (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                Ainda não há tarefas concluídas para gerar o relatório.
+              </p>
+            ) : (
+              <div className="grid gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                  <ChartContainer config={chartConfig} className="h-[260px] w-full">
+                    <BarChart data={report.series}>
+                      <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        axisLine={false}
+                        tickMargin={8}
+                      />
+                      <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={28} />
+                      <ChartTooltip
+                        cursor={false}
+                        content={
+                          <ChartTooltipContent
+                            labelFormatter={(_v, payload) =>
+                              (payload?.[0]?.payload as { full?: string })?.full ?? ""
+                            }
+                          />
+                        }
+                      />
+                      <Bar dataKey="concluidas" fill="var(--color-concluidas)" radius={4} />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+                <div>
+                  <div className="mb-2 text-sm font-medium">Dias com mais atividade</div>
+                  {report.top.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sem registros.</p>
+                  ) : (
+                    <ol className="space-y-2">
+                      {report.top.map((d, i) => (
+                        <li
+                          key={d.key}
+                          className="flex items-center justify-between rounded-md border p-2 text-sm"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                              {i + 1}
+                            </span>
+                            <span className="capitalize">{d.full}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-semibold">{d.concluidas}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatMinutes(d.minutos)}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card className="mb-8">
           <CardHeader>
