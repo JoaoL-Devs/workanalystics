@@ -140,6 +140,59 @@ function Index() {
     };
   }, [tasks]);
 
+  const report = useMemo(() => {
+    const days = 14;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const buckets = new Map<string, { date: Date; concluidas: number; minutos: number }>();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      buckets.set(d.toISOString().slice(0, 10), { date: d, concluidas: 0, minutos: 0 });
+    }
+    for (const t of tasks) {
+      if (!t.closedAt) continue;
+      const key = new Date(t.closedAt).toISOString().slice(0, 10);
+      const bucket = buckets.get(key);
+      if (!bucket) continue;
+      bucket.concluidas += 1;
+      if (t.openedAt) {
+        const ms = new Date(t.closedAt).getTime() - new Date(t.openedAt).getTime();
+        if (ms > 0) bucket.minutos += Math.floor(ms / 60000);
+      }
+    }
+    const series = Array.from(buckets.values()).map((b) => ({
+      key: b.date.toISOString().slice(0, 10),
+      label: b.date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+      full: b.date.toLocaleDateString("pt-BR", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+      }),
+      concluidas: b.concluidas,
+      minutos: b.minutos,
+    }));
+    const top = [...series]
+      .filter((s) => s.concluidas > 0)
+      .sort((a, b) => b.concluidas - a.concluidas || b.minutos - a.minutos)
+      .slice(0, 5);
+    const totalConcluidas = series.reduce((a, s) => a + s.concluidas, 0);
+    const totalMinutos = series.reduce((a, s) => a + s.minutos, 0);
+    return { series, top, totalConcluidas, totalMinutos };
+  }, [tasks]);
+
+  function formatMinutes(min: number) {
+    if (!min) return "0min";
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    if (h === 0) return `${m}min`;
+    return `${h}h ${m}min`;
+  }
+
+  const chartConfig = {
+    concluidas: { label: "Concluídas", color: "hsl(var(--primary))" },
+  } satisfies ChartConfig;
+
   function addTask(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = title.trim();
