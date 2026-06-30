@@ -63,6 +63,41 @@ type Task = {
 };
 
 const STORAGE_KEY = "task-manager:tasks:v1";
+const NOTES_STORAGE_KEY = "task-manager:notes:v1";
+
+type Note = {
+  id: string;
+  date: string; // YYYY-MM-DD
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function loadNotes(): Note[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(NOTES_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Note[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function todayISODate() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDateLabel(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
 
 function loadTasks(): Task[] {
   if (typeof window === "undefined") return [];
