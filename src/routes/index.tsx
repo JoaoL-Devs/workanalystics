@@ -155,9 +155,14 @@ function Index() {
   const [status, setStatus] = useState<Status>("pendente");
   const [scheduledFor, setScheduledFor] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [noteDate, setNoteDate] = useState<string>(todayISODate());
+  const [noteDraft, setNoteDraft] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   useEffect(() => {
     setTasks(loadTasks());
+    setNotes(loadNotes());
     setLoaded(true);
   }, []);
 
@@ -165,6 +170,11 @@ function Index() {
     if (!loaded) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
+  }, [notes, loaded]);
 
   const stats = useMemo(() => {
     return {
