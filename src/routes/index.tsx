@@ -290,6 +290,53 @@ function Index() {
     });
   }
 
+  function saveNote() {
+    const content = noteDraft.trim();
+    if (!content) return;
+    const now = new Date().toISOString();
+    if (editingNoteId) {
+      setNotes((prev) =>
+        prev.map((n) =>
+          n.id === editingNoteId ? { ...n, content, date: noteDate, updatedAt: now } : n,
+        ),
+      );
+      setEditingNoteId(null);
+    } else {
+      const newNote: Note = {
+        id: crypto.randomUUID(),
+        date: noteDate,
+        content,
+        createdAt: now,
+        updatedAt: now,
+      };
+      setNotes((prev) => [newNote, ...prev]);
+    }
+    setNoteDraft("");
+  }
+
+  function editNote(note: Note) {
+    setEditingNoteId(note.id);
+    setNoteDate(note.date);
+    setNoteDraft(note.content);
+  }
+
+  function cancelEditNote() {
+    setEditingNoteId(null);
+    setNoteDraft("");
+    setNoteDate(todayISODate());
+  }
+
+  function removeNote(id: string) {
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+    if (editingNoteId === id) cancelEditNote();
+  }
+
+  const sortedNotes = useMemo(
+    () => [...notes].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.updatedAt.localeCompare(a.updatedAt))),
+    [notes],
+  );
+
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
