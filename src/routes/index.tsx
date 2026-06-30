@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Play, Square, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { Plus, Trash2, Play, Square, Calendar as CalendarIcon, Clock, FileText, Pencil, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,6 +63,41 @@ type Task = {
 };
 
 const STORAGE_KEY = "task-manager:tasks:v1";
+const NOTES_STORAGE_KEY = "task-manager:notes:v1";
+
+type Note = {
+  id: string;
+  date: string; // YYYY-MM-DD
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function loadNotes(): Note[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(NOTES_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Note[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function todayISODate() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDateLabel(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  return d.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
 
 function loadTasks(): Task[] {
   if (typeof window === "undefined") return [];
@@ -120,9 +155,14 @@ function Index() {
   const [status, setStatus] = useState<Status>("pendente");
   const [scheduledFor, setScheduledFor] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [noteDate, setNoteDate] = useState<string>(todayISODate());
+  const [noteDraft, setNoteDraft] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   useEffect(() => {
     setTasks(loadTasks());
+    setNotes(loadNotes());
     setLoaded(true);
   }, []);
 
@@ -130,6 +170,11 @@ function Index() {
     if (!loaded) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
+  }, [notes, loaded]);
 
   const stats = useMemo(() => {
     return {
@@ -244,6 +289,53 @@ function Index() {
       status: "concluido",
     });
   }
+
+  function saveNote() {
+    const content = noteDraft.trim();
+    if (!content) return;
+    const now = new Date().toISOString();
+    if (editingNoteId) {
+      setNotes((prev) =>
+        prev.map((n) =>
+          n.id === editingNoteId ? { ...n, content, date: noteDate, updatedAt: now } : n,
+        ),
+      );
+      setEditingNoteId(null);
+    } else {
+      const newNote: Note = {
+        id: crypto.randomUUID(),
+        date: noteDate,
+        content,
+        createdAt: now,
+        updatedAt: now,
+      };
+      setNotes((prev) => [newNote, ...prev]);
+    }
+    setNoteDraft("");
+  }
+
+  function editNote(note: Note) {
+    setEditingNoteId(note.id);
+    setNoteDate(note.date);
+    setNoteDraft(note.content);
+  }
+
+  function cancelEditNote() {
+    setEditingNoteId(null);
+    setNoteDraft("");
+    setNoteDate(todayISODate());
+  }
+
+  function removeNote(id: string) {
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+    if (editingNoteId === id) cancelEditNote();
+  }
+
+  const sortedNotes = useMemo(
+    () => [...notes].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.updatedAt.localeCompare(a.updatedAt))),
+    [notes],
+  );
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -525,6 +617,89 @@ function Index() {
                 </TableBody>
               </Table>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="size-5" /> Bloco de notas — relatórios diários
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-[200px_1fr]">
+              <div>
+                <label className="mb-1 block text-sm font-medium">Data do relatório</label>
+                <Input
+                  type="date"
+                  value={noteDate}
+                  onChange={(e) => setNoteDate(e.target.value || todayISODate())}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">
+                  {editingNoteId ? "Editando nota" : "Nova nota"}
+                </label>
+                <Textarea
+                  value={noteDraft}
+                  onChange={(e) => setNoteDraft(e.target.value)}
+                  placeholder="Escreva aqui o relatório do dia: o que fez, bloqueios, próximos passos..."
+                  className="min-h-[140px]"
+                />
+              </div>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Button onClick={saveNote} disabled={!noteDraft.trim()}>
+                {editingNoteId ? <><Save /> Salvar alterações</> : <><Plus /> Adicionar nota</>}
+              </Button>
+              {editingNoteId && (
+                <Button variant="outline" onClick={cancelEditNote}>
+                  <X /> Cancelar
+                </Button>
+              )}
+            </div>
+
+            <div className="mt-6 space-y-3">
+              {sortedNotes.length === 0 ? (
+                <p className="py-10 text-center text-sm text-muted-foreground">
+                  Nenhuma nota ainda. Comece registrando o relatório de hoje.
+                </p>
+              ) : (
+                sortedNotes.map((n) => (
+                  <div key={n.id} className="rounded-md border p-4">
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-semibold capitalize">
+                          {formatDateLabel(n.date)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Atualizado em {formatDateTime(n.updatedAt)}
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => editNote(n)}
+                          title="Editar nota"
+                        >
+                          <Pencil />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => removeNote(n.id)}
+                          title="Remover nota"
+                        >
+                          <Trash2 />
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{n.content}</p>
+                  </div>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
