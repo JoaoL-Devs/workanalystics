@@ -330,14 +330,27 @@ function Index() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Gerenciador de Tarefas
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Adicione tarefas, defina status e controle quando você começou e terminou cada uma.
-          </p>
+        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Gerenciador de Tarefas
+            </h1>
+            <p className="mt-2 text-muted-foreground">
+              Adicione tarefas, defina status e controle quando você começou e terminou cada uma.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link to="/tarefas-passadas">
+                <History /> Ver tarefas passadas
+              </Link>
+            </Button>
+            <Button variant="secondary" onClick={endDay} title="Arquivar concluídas e limpar a lista">
+              <Archive /> Encerrar dia
+            </Button>
+          </div>
         </header>
+
 
         <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
