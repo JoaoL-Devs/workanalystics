@@ -116,6 +116,7 @@ const statusVariant: Record<Status, { label: string; className: string }> = {
 
 function Index() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [archive, setArchive] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<Status>("pendente");
@@ -128,6 +129,7 @@ function Index() {
 
   useEffect(() => {
     setTasks(loadTasks());
+    setArchive(loadArchive());
     setNotes(loadNotes());
     setLoaded(true);
   }, []);
@@ -139,8 +141,28 @@ function Index() {
 
   useEffect(() => {
     if (!loaded) return;
+    window.localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive));
+  }, [archive, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
     window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
   }, [notes, loaded]);
+
+  function endDay() {
+    const done = tasks.filter((t) => t.status === "concluido");
+    if (done.length === 0) {
+      if (!confirm("Nenhuma tarefa concluída para arquivar. Deseja limpar todas as tarefas mesmo assim?")) return;
+      setTasks([]);
+      return;
+    }
+    if (!confirm(`Arquivar ${done.length} tarefa(s) concluída(s) e limpar a lista?`)) return;
+    const now = new Date().toISOString();
+    const archived = done.map((t) => ({ ...t, archivedAt: now }));
+    setArchive((prev) => [...archived, ...prev]);
+    setTasks([]);
+  }
+
 
   const stats = useMemo(() => {
     return {
