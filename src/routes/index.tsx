@@ -98,39 +98,6 @@ function formatDateLabel(iso: string) {
   });
 }
 
-function loadTasks(): Task[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Task[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function formatDateTime(value?: string) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function durationBetween(a?: string, b?: string) {
-  if (!a || !b) return "—";
-  const ms = new Date(b).getTime() - new Date(a).getTime();
-  if (isNaN(ms) || ms < 0) return "—";
-  const totalMin = Math.floor(ms / 60000);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  if (h === 0) return `${m}min`;
-  return `${h}h ${m}min`;
-}
 
 const statusVariant: Record<Status, { label: string; className: string }> = {
   pendente: {
