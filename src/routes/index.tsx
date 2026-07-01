@@ -183,7 +183,7 @@ function Index() {
       d.setDate(today.getDate() - i);
       buckets.set(d.toISOString().slice(0, 10), { date: d, concluidas: 0, minutos: 0 });
     }
-    for (const t of tasks) {
+    for (const t of [...tasks, ...archive]) {
       if (!t.closedAt) continue;
       const key = new Date(t.closedAt).toISOString().slice(0, 10);
       const bucket = buckets.get(key);
@@ -194,6 +194,7 @@ function Index() {
         if (ms > 0) bucket.minutos += Math.floor(ms / 60000);
       }
     }
+
     const series = Array.from(buckets.values()).map((b) => ({
       key: b.date.toISOString().slice(0, 10),
       label: b.date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
