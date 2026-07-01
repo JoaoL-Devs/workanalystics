@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Play, Square, Calendar as CalendarIcon, Clock, FileText, Pencil, Save, X } from "lucide-react";
+import { Plus, Trash2, Play, Square, Calendar as CalendarIcon, Clock, FileText, Pencil, Save, X, Archive, History } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,21 +50,19 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Status = "pendente" | "agendado" | "concluido";
+import {
+  loadTasks,
+  loadArchive,
+  formatDateTime,
+  durationBetween,
+  STORAGE_KEY,
+  ARCHIVE_KEY,
+  NOTES_STORAGE_KEY,
+  type Task,
+  type Status,
+} from "@/lib/task-storage";
 
-type Task = {
-  id: string;
-  title: string;
-  description?: string;
-  status: Status;
-  scheduledFor?: string; // ISO datetime-local
-  openedAt?: string; // ISO
-  closedAt?: string; // ISO
-  createdAt: string;
-};
 
-const STORAGE_KEY = "task-manager:tasks:v1";
-const NOTES_STORAGE_KEY = "task-manager:notes:v1";
 
 type Note = {
   id: string;
@@ -99,39 +98,6 @@ function formatDateLabel(iso: string) {
   });
 }
 
-function loadTasks(): Task[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Task[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function formatDateTime(value?: string) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (isNaN(d.getTime())) return "—";
-  return d.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function durationBetween(a?: string, b?: string) {
-  if (!a || !b) return "—";
-  const ms = new Date(b).getTime() - new Date(a).getTime();
-  if (isNaN(ms) || ms < 0) return "—";
-  const totalMin = Math.floor(ms / 60000);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  if (h === 0) return `${m}min`;
-  return `${h}h ${m}min`;
-}
 
 const statusVariant: Record<Status, { label: string; className: string }> = {
   pendente: {
@@ -150,6 +116,7 @@ const statusVariant: Record<Status, { label: string; className: string }> = {
 
 function Index() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [archive, setArchive] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<Status>("pendente");
@@ -162,6 +129,7 @@ function Index() {
 
   useEffect(() => {
     setTasks(loadTasks());
+    setArchive(loadArchive());
     setNotes(loadNotes());
     setLoaded(true);
   }, []);
@@ -173,8 +141,28 @@ function Index() {
 
   useEffect(() => {
     if (!loaded) return;
+    window.localStorage.setItem(ARCHIVE_KEY, JSON.stringify(archive));
+  }, [archive, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
     window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
   }, [notes, loaded]);
+
+  function endDay() {
+    const done = tasks.filter((t) => t.status === "concluido");
+    if (done.length === 0) {
+      if (!confirm("Nenhuma tarefa concluída para arquivar. Deseja limpar todas as tarefas mesmo assim?")) return;
+      setTasks([]);
+      return;
+    }
+    if (!confirm(`Arquivar ${done.length} tarefa(s) concluída(s) e limpar a lista?`)) return;
+    const now = new Date().toISOString();
+    const archived = done.map((t) => ({ ...t, archivedAt: now }));
+    setArchive((prev) => [...archived, ...prev]);
+    setTasks([]);
+  }
+
 
   const stats = useMemo(() => {
     return {
@@ -195,7 +183,7 @@ function Index() {
       d.setDate(today.getDate() - i);
       buckets.set(d.toISOString().slice(0, 10), { date: d, concluidas: 0, minutos: 0 });
     }
-    for (const t of tasks) {
+    for (const t of [...tasks, ...archive]) {
       if (!t.closedAt) continue;
       const key = new Date(t.closedAt).toISOString().slice(0, 10);
       const bucket = buckets.get(key);
@@ -206,6 +194,7 @@ function Index() {
         if (ms > 0) bucket.minutos += Math.floor(ms / 60000);
       }
     }
+
     const series = Array.from(buckets.values()).map((b) => ({
       key: b.date.toISOString().slice(0, 10),
       label: b.date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
@@ -224,7 +213,8 @@ function Index() {
     const totalConcluidas = series.reduce((a, s) => a + s.concluidas, 0);
     const totalMinutos = series.reduce((a, s) => a + s.minutos, 0);
     return { series, top, totalConcluidas, totalMinutos };
-  }, [tasks]);
+  }, [tasks, archive]);
+
 
   function formatMinutes(min: number) {
     if (!min) return "0min";
@@ -340,14 +330,27 @@ function Index() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Gerenciador de Tarefas
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Adicione tarefas, defina status e controle quando você começou e terminou cada uma.
-          </p>
+        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Gerenciador de Tarefas
+            </h1>
+            <p className="mt-2 text-muted-foreground">
+              Adicione tarefas, defina status e controle quando você começou e terminou cada uma.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link to="/tarefas-passadas">
+                <History /> Ver tarefas passadas
+              </Link>
+            </Button>
+            <Button variant="secondary" onClick={endDay} title="Arquivar concluídas e limpar a lista">
+              <Archive /> Encerrar dia
+            </Button>
+          </div>
         </header>
+
 
         <section className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
