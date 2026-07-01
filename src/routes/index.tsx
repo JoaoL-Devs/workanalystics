@@ -213,7 +213,8 @@ function Index() {
     const totalConcluidas = series.reduce((a, s) => a + s.concluidas, 0);
     const totalMinutos = series.reduce((a, s) => a + s.minutos, 0);
     return { series, top, totalConcluidas, totalMinutos };
-  }, [tasks]);
+  }, [tasks, archive]);
+
 
   function formatMinutes(min: number) {
     if (!min) return "0min";
