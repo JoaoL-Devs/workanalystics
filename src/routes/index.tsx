@@ -50,21 +50,19 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Status = "pendente" | "agendado" | "concluido";
+import {
+  loadTasks,
+  loadArchive,
+  formatDateTime,
+  durationBetween,
+  STORAGE_KEY,
+  ARCHIVE_KEY,
+  NOTES_STORAGE_KEY,
+  type Task,
+  type Status,
+} from "@/lib/task-storage";
 
-type Task = {
-  id: string;
-  title: string;
-  description?: string;
-  status: Status;
-  scheduledFor?: string; // ISO datetime-local
-  openedAt?: string; // ISO
-  closedAt?: string; // ISO
-  createdAt: string;
-};
 
-const STORAGE_KEY = "task-manager:tasks:v1";
-const NOTES_STORAGE_KEY = "task-manager:notes:v1";
 
 type Note = {
   id: string;
