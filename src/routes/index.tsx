@@ -151,17 +151,18 @@ function Index() {
 
   function endDay() {
     const done = tasks.filter((t) => t.status === "concluido");
+    const remaining = tasks.filter((t) => t.status !== "concluido");
     if (done.length === 0) {
-      if (!confirm("Nenhuma tarefa concluída para arquivar. Deseja limpar todas as tarefas mesmo assim?")) return;
-      setTasks([]);
+      alert("Nenhuma tarefa concluída para arquivar. Tarefas pendentes e agendadas permanecem na lista.");
       return;
     }
-    if (!confirm(`Arquivar ${done.length} tarefa(s) concluída(s) e limpar a lista?`)) return;
+    if (!confirm(`Arquivar ${done.length} tarefa(s) concluída(s)? As pendentes e agendadas permanecem na lista.`)) return;
     const now = new Date().toISOString();
     const archived = done.map((t) => ({ ...t, archivedAt: now }));
     setArchive((prev) => [...archived, ...prev]);
-    setTasks([]);
+    setTasks(remaining);
   }
+
 
 
   const stats = useMemo(() => {
