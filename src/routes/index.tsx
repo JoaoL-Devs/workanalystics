@@ -121,6 +121,7 @@ function Index() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<Status>("pendente");
   const [scheduledFor, setScheduledFor] = useState("");
+  const [activityDate, setActivityDate] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [noteDate, setNoteDate] = useState<string>(todayISODate());
@@ -235,22 +236,31 @@ function Index() {
     e.preventDefault();
     const trimmed = title.trim();
     if (!trimmed) return;
-    const now = new Date().toISOString();
+    const nowDate = new Date();
+    const now = nowDate.toISOString();
+    let activity = now;
+    if (activityDate) {
+      const chosen = new Date(activityDate);
+      if (!isNaN(chosen.getTime()) && chosen.getTime() < nowDate.getTime()) {
+        activity = chosen.toISOString();
+      }
+    }
     const newTask: Task = {
       id: crypto.randomUUID(),
       title: trimmed.slice(0, 120),
       description: description.trim().slice(0, 500) || undefined,
       status,
       scheduledFor: status === "agendado" && scheduledFor ? scheduledFor : undefined,
-      openedAt: status === "concluido" ? now : undefined,
-      closedAt: status === "concluido" ? now : undefined,
-      createdAt: now,
+      openedAt: status === "concluido" ? activity : undefined,
+      closedAt: status === "concluido" ? activity : undefined,
+      createdAt: activity,
     };
     setTasks((prev) => [newTask, ...prev]);
     setTitle("");
     setDescription("");
     setStatus("pendente");
     setScheduledFor("");
+    setActivityDate("");
   }
 
   function removeTask(id: string) {
@@ -502,6 +512,23 @@ function Index() {
                   onChange={(e) => setScheduledFor(e.target.value)}
                   disabled={status !== "agendado"}
                 />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-sm font-medium">
+                  <CalendarIcon className="mr-1 inline size-4" />
+                  Data da atividade (opcional)
+                </label>
+                <Input
+                  type="datetime-local"
+                  value={activityDate}
+                  onChange={(e) => setActivityDate(e.target.value)}
+                  max={new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .slice(0, 16)}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Use para registrar tarefas de dias anteriores. Se vazio ou futura, será usada a data/hora atual.
+                </p>
               </div>
               <div className="sm:col-span-2">
                 <Button type="submit" className="w-full sm:w-auto">
