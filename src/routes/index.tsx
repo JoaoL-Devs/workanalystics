@@ -242,6 +242,8 @@ function Index() {
       description: description.trim().slice(0, 500) || undefined,
       status,
       scheduledFor: status === "agendado" && scheduledFor ? scheduledFor : undefined,
+      openedAt: status === "concluido" ? now : undefined,
+      closedAt: status === "concluido" ? now : undefined,
       createdAt: now,
     };
     setTasks((prev) => [newTask, ...prev]);
