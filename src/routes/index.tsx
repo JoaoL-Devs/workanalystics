@@ -185,12 +185,14 @@ function Index() {
       buckets.set(d.toISOString().slice(0, 10), { date: d, concluidas: 0, minutos: 0 });
     }
     for (const t of [...tasks, ...archive]) {
-      if (!t.closedAt) continue;
-      const key = new Date(t.closedAt).toISOString().slice(0, 10);
+      if (t.status !== "concluido") continue;
+      const reference = t.closedAt ?? t.archivedAt ?? t.createdAt;
+      if (!reference) continue;
+      const key = new Date(reference).toISOString().slice(0, 10);
       const bucket = buckets.get(key);
       if (!bucket) continue;
       bucket.concluidas += 1;
-      if (t.openedAt) {
+      if (t.openedAt && t.closedAt) {
         const ms = new Date(t.closedAt).getTime() - new Date(t.openedAt).getTime();
         if (ms > 0) bucket.minutos += Math.floor(ms / 60000);
       }
@@ -240,6 +242,8 @@ function Index() {
       description: description.trim().slice(0, 500) || undefined,
       status,
       scheduledFor: status === "agendado" && scheduledFor ? scheduledFor : undefined,
+      openedAt: status === "concluido" ? now : undefined,
+      closedAt: status === "concluido" ? now : undefined,
       createdAt: now,
     };
     setTasks((prev) => [newTask, ...prev]);
