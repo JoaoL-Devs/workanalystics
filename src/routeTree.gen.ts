@@ -9,68 +9,116 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TarefasPassadasRouteImport } from './routes/tarefas-passadas'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedTarefasPassadasRouteImport } from './routes/_authenticated/tarefas-passadas'
 
-const TarefasPassadasRoute = TarefasPassadasRouteImport.update({
-  id: '/tarefas-passadas',
-  path: '/tarefas-passadas',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTarefasPassadasRoute =
+  AuthenticatedTarefasPassadasRouteImport.update({
+    id: '/tarefas-passadas',
+    path: '/tarefas-passadas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/tarefas-passadas': typeof TarefasPassadasRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRoute
+  '/tarefas-passadas': typeof AuthenticatedTarefasPassadasRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/tarefas-passadas': typeof TarefasPassadasRoute
+  '/auth': typeof AuthRoute
+  '/tarefas-passadas': typeof AuthenticatedTarefasPassadasRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/tarefas-passadas': typeof TarefasPassadasRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/tarefas-passadas': typeof AuthenticatedTarefasPassadasRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/tarefas-passadas'
+  fullPaths: '/' | '/auth' | '/tarefas-passadas'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/tarefas-passadas'
-  id: '__root__' | '/' | '/tarefas-passadas'
+  to: '/auth' | '/tarefas-passadas' | '/'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/tarefas-passadas'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  TarefasPassadasRoute: typeof TarefasPassadasRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/tarefas-passadas': {
-      id: '/tarefas-passadas'
-      path: '/tarefas-passadas'
-      fullPath: '/tarefas-passadas'
-      preLoaderRoute: typeof TarefasPassadasRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/tarefas-passadas': {
+      id: '/_authenticated/tarefas-passadas'
+      path: '/tarefas-passadas'
+      fullPath: '/tarefas-passadas'
+      preLoaderRoute: typeof AuthenticatedTarefasPassadasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedTarefasPassadasRoute: typeof AuthenticatedTarefasPassadasRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedTarefasPassadasRoute: AuthenticatedTarefasPassadasRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  TarefasPassadasRoute: TarefasPassadasRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
