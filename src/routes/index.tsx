@@ -239,10 +239,12 @@ function Index() {
     const nowDate = new Date();
     const now = nowDate.toISOString();
     let activity = now;
+    let isPast = false;
     if (activityDate) {
       const chosen = new Date(activityDate);
       if (!isNaN(chosen.getTime()) && chosen.getTime() < nowDate.getTime()) {
         activity = chosen.toISOString();
+        isPast = true;
       }
     }
     const newTask: Task = {
@@ -255,7 +257,11 @@ function Index() {
       closedAt: status === "concluido" ? activity : undefined,
       createdAt: activity,
     };
-    setTasks((prev) => [newTask, ...prev]);
+    if (status === "concluido" && isPast) {
+      setArchive((prev) => [{ ...newTask, archivedAt: now }, ...prev]);
+    } else {
+      setTasks((prev) => [newTask, ...prev]);
+    }
     setTitle("");
     setDescription("");
     setStatus("pendente");
