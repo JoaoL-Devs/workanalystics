@@ -103,10 +103,18 @@ export async function insertTask(userId: string, t: Omit<Task, "id">): Promise<T
 }
 
 export async function updateTaskRow(id: string, patch: Partial<Task>): Promise<void> {
-  const payload: Record<string, unknown> = {};
-  if ("title" in patch) payload.title = patch.title;
+  const payload: {
+    title?: string;
+    description?: string | null;
+    status?: string;
+    scheduled_for?: string | null;
+    opened_at?: string | null;
+    closed_at?: string | null;
+    archived_at?: string | null;
+  } = {};
+  if ("title" in patch && patch.title !== undefined) payload.title = patch.title;
   if ("description" in patch) payload.description = patch.description ?? null;
-  if ("status" in patch) payload.status = patch.status;
+  if ("status" in patch && patch.status !== undefined) payload.status = patch.status;
   if ("scheduledFor" in patch) payload.scheduled_for = patch.scheduledFor ?? null;
   if ("openedAt" in patch) payload.opened_at = patch.openedAt ?? null;
   if ("closedAt" in patch) payload.closed_at = patch.closedAt ?? null;

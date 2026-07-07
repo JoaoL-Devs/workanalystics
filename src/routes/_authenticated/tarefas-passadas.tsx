@@ -20,7 +20,7 @@ import {
   type Task,
 } from "@/lib/task-storage";
 
-export const Route = createFileRoute("/tarefas-passadas")({
+export const Route = createFileRoute("/_authenticated/tarefas-passadas")({
   head: () => ({
     meta: [
       { title: "Tarefas passadas — Gerenciador de Tarefas" },
