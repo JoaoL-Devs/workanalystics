@@ -96,20 +96,15 @@ function Index() {
   const [status, setStatus] = useState<Status>("pendente");
   const [scheduledFor, setScheduledFor] = useState("");
   const [activityDate, setActivityDate] = useState("");
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [noteDate, setNoteDate] = useState<string>(todayISODate());
-  const [noteDraft, setNoteDraft] = useState("");
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getUser();
       if (!data.user) return;
       setUserId(data.user.id);
-      const [t, n] = await Promise.all([fetchTasks(), fetchNotes()]);
+      const t = await fetchTasks();
       setTasks(t.tasks);
       setArchive(t.archive);
-      setNotes(n);
     })();
   }, []);
 
