@@ -257,44 +257,6 @@ function Index() {
     });
   }
 
-  async function saveNote() {
-    if (!userId) return;
-    const content = noteDraft.trim();
-    if (!content) return;
-    if (editingNoteId) {
-      const updated = await updateNoteRow(editingNoteId, noteDate, content);
-      setNotes((prev) => prev.map((n) => (n.id === editingNoteId ? updated : n)));
-      setEditingNoteId(null);
-    } else {
-      const created = await insertNote(userId, noteDate, content);
-      setNotes((prev) => [created, ...prev]);
-    }
-    setNoteDraft("");
-  }
-
-  function editNote(note: Note) {
-    setEditingNoteId(note.id);
-    setNoteDate(note.date);
-    setNoteDraft(note.content);
-  }
-
-  function cancelEditNote() {
-    setEditingNoteId(null);
-    setNoteDraft("");
-    setNoteDate(todayISODate());
-  }
-
-  async function removeNote(id: string) {
-    await deleteNoteRow(id);
-    setNotes((prev) => prev.filter((n) => n.id !== id));
-    if (editingNoteId === id) cancelEditNote();
-  }
-
-  const sortedNotes = useMemo(
-    () => [...notes].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.updatedAt.localeCompare(a.updatedAt))),
-    [notes],
-  );
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-6xl px-4 py-8 sm:py-12">
@@ -490,51 +452,6 @@ function Index() {
           </CardContent>
         </Card>
 
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><FileText className="size-5" /> Bloco de notas — relatórios diários</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 sm:grid-cols-[200px_1fr]">
-              <div>
-                <label className="mb-1 block text-sm font-medium">Data do relatório</label>
-                <Input type="date" value={noteDate} onChange={(e) => setNoteDate(e.target.value || todayISODate())} />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium">{editingNoteId ? "Editando nota" : "Nova nota"}</label>
-                <Textarea value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Escreva aqui o relatório do dia..." className="min-h-[140px]" />
-              </div>
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Button onClick={saveNote} disabled={!noteDraft.trim()}>
-                {editingNoteId ? <><Save /> Salvar alterações</> : <><Plus /> Adicionar nota</>}
-              </Button>
-              {editingNoteId && <Button variant="outline" onClick={cancelEditNote}><X /> Cancelar</Button>}
-            </div>
-
-            <div className="mt-6 space-y-3">
-              {sortedNotes.length === 0 ? (
-                <p className="py-10 text-center text-sm text-muted-foreground">Nenhuma nota ainda. Comece registrando o relatório de hoje.</p>
-              ) : (
-                sortedNotes.map((n) => (
-                  <div key={n.id} className="rounded-md border p-4">
-                    <div className="mb-2 flex items-start justify-between gap-2">
-                      <div>
-                        <div className="text-sm font-semibold capitalize">{formatDateLabel(n.date)}</div>
-                        <div className="text-xs text-muted-foreground">Atualizado em {formatDateTime(n.updatedAt)}</div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => editNote(n)} title="Editar nota"><Pencil /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => removeNote(n.id)} title="Remover nota"><Trash2 /></Button>
-                      </div>
-                    </div>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{n.content}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
