@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Play, Square, Calendar as CalendarIcon, Clock, FileText, Pencil, Save, X, Archive, History, LogOut } from "lucide-react";
+import { Plus, Trash2, Play, Square, Calendar as CalendarIcon, Clock, Archive, History, LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,18 +32,13 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchTasks,
-  fetchNotes,
   insertTask,
   updateTaskRow,
   deleteTaskRow,
-  insertNote,
-  updateNoteRow,
-  deleteNoteRow,
   formatDateTime,
   durationBetween,
   type Task,
   type Status,
-  type Note,
 } from "@/lib/task-storage";
 
 export const Route = createFileRoute("/_authenticated/")({
