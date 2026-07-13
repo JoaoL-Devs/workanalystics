@@ -55,22 +55,6 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Index,
 });
 
-function todayISODate() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-}
-
-function formatDateLabel(iso: string) {
-  const d = new Date(iso + "T00:00:00");
-  return d.toLocaleDateString("pt-BR", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 const statusVariant: Record<Status, { label: string; className: string }> = {
   pendente: {
     label: "Pendente",
