@@ -64,6 +64,46 @@ function PastTasks() {
     setArchive([]);
   }
 
+  async function exportPdf() {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+
+    const doc = new jsPDF({ orientation: "landscape" });
+    const now = new Date();
+
+    doc.setFontSize(16);
+    doc.text("Relatório de atividades concluídas", 14, 16);
+    doc.setFontSize(10);
+    doc.text(`Gerado em ${now.toLocaleString("pt-BR")} — ${archive.length} atividade(s)`, 14, 22);
+
+    let startY = 30;
+    for (const [day, items] of grouped) {
+      autoTable(doc, {
+        startY,
+        head: [[`${formatDayLabel(day)} (${items.length})`, "", "", "", ""]],
+        body: [],
+        theme: "plain",
+        headStyles: { fontStyle: "bold", fontSize: 11 },
+      });
+      autoTable(doc, {
+        startY: (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY,
+        head: [["Tarefa", "Descrição", "Início", "Resolvida em", "Duração"]],
+        body: items.map((t) => [
+          t.title,
+          t.description ?? "—",
+          formatDateTime(t.openedAt),
+          formatDateTime(t.closedAt),
+          durationBetween(t.openedAt, t.closedAt),
+        ]),
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [40, 40, 45] },
+        columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 80 } },
+      });
+      startY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+    }
+
+    doc.save(`relatorio-atividades-${now.toISOString().slice(0, 10)}.pdf`);
+
   function formatDayLabel(iso: string) {
     const d = new Date(iso + "T00:00:00");
     return d.toLocaleDateString("pt-BR", {
