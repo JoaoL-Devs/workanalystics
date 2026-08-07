@@ -128,6 +128,9 @@ function PastTasks() {
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline"><Link to="/"><ArrowLeft /> Voltar</Link></Button>
             {archive.length > 0 && (
+              <Button onClick={exportPdf}><FileDown /> Baixar relatório PDF</Button>
+            )}
+            {archive.length > 0 && (
               <Button variant="destructive" onClick={clearAll}><RotateCcw /> Limpar histórico</Button>
             )}
           </div>
