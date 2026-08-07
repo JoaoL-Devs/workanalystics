@@ -103,6 +103,9 @@ function PastTasks() {
     }
 
     doc.save(`relatorio-atividades-${now.toISOString().slice(0, 10)}.pdf`);
+  }
+
+
 
   function formatDayLabel(iso: string) {
     const d = new Date(iso + "T00:00:00");
