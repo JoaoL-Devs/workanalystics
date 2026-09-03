@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Play, Square, Calendar as CalendarIcon, Clock, Archive, History, LogOut } from "lucide-react";
+import { Plus, Trash2, Play, Square, Calendar as CalendarIcon, Clock, Archive, History, LogOut, BarChart3 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -252,6 +252,9 @@ function Index() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link to="/dashboard"><BarChart3 /> Dashboard completo</Link>
+            </Button>
             <Button asChild variant="outline">
               <Link to="/tarefas-passadas"><History /> Ver tarefas passadas</Link>
             </Button>
