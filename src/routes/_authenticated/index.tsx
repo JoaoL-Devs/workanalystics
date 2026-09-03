@@ -252,6 +252,9 @@ function Index() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link to="/dashboard"><BarChart3 /> Dashboard completo</Link>
+            </Button>
             <Button asChild variant="outline">
               <Link to="/tarefas-passadas"><History /> Ver tarefas passadas</Link>
             </Button>
